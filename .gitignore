@@ -1,0 +1,7 @@
+proxy_pass.txt
+siu_pass.txt
+examenes.spec
+dist/
+build/
+__pycache__/
+*.pyc
