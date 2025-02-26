@@ -17,6 +17,8 @@ examenes.exe <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --llamado=<ll
 - output es la carpeta donde se guardará el archivo de excel. Si no se pasa, se guarda en la carpeta donde está el .exe
 - filename es el nombre del archivo de excel. Si no se pasa, se guarda con el nombre "output.xlsx"
 
+- Ya cuando está ejecutando, se puede usar la compu con normalidad, sin interactuar con el firefox del que se está scrapeando
+
 ## Errores ##
 - Si al querer empezar, la página que abre es 403 Forbidden, es porque el proxy no está seteado correctamente.
 - Si no abre ningún navegador, descargar el geckodriver, y agregarlo al PATH de windows.
