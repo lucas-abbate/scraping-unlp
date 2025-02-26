@@ -107,9 +107,14 @@ def main(
                 ).get_property("value")
             except exceptions.NoSuchElementException:
                 time.sleep(5 * residual_timeout)
-                back = browser.find_element(By.XPATH, '//*[@id="ci_38000483_cancelar"]')
-                back.click()
-                time.sleep(5 * residual_timeout)
+                try:
+                    back = browser.find_element(
+                        By.XPATH, '//*[@id="ci_38000483_cancelar"]'
+                    )
+                    back.click()
+                    time.sleep(5 * residual_timeout)
+                except exceptions.NoSuchElementException:
+                    curr_pag = "1"
             # Asegurarse que estamos en la página correcta
             while curr_pag != str(i + 1):
                 fx.next_page(browser, 2)
