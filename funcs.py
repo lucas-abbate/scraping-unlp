@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import time
 from typing import Any, Tuple, Union, List, Optional, Dict
 
@@ -345,6 +346,72 @@ def ejecutar_filtro(
     )
 
 
+def filtrar_año_com(
+    browser: webdriver.Firefox,
+    input_text: Optional[str] = None,
+    timeout: int = 10,
+    residual_timeout: int = 1,
+) -> None:
+    """
+    Selecciona el año académico en el dropdown correspondiente.
+
+    Args:
+        browser: Instancia del navegador.
+        input_text: Valor a seleccionar; si es None, se solicita al usuario.
+        timeout: Tiempo máximo de espera en segundos.
+        residual_timeout: Tiempo de espera adicional después de interactuar.
+    """
+    select_option_by_input(
+        browser,
+        '//*[@id="ef_ei_34000144_filtroanio_academico"]',
+        input_text=input_text,
+        timeout=timeout,
+        residual_timeout=residual_timeout,
+    )
+
+
+def filtrar_periodo_com(
+    browser: webdriver.Firefox,
+    input_text: Optional[str] = None,
+    timeout: int = 10,
+    residual_timeout: int = 1,
+) -> None:
+    """
+    Selecciona el turno de examen en el dropdown correspondiente.
+
+    Args:
+        browser: Instancia del navegador.
+        input_text: Valor a seleccionar; si es None, se solicita al usuario.
+        timeout: Tiempo máximo de espera en segundos.
+        residual_timeout: Tiempo de espera adicional después de interactuar.
+    """
+    text_flag = True if input_text is not None else False
+    select_option_by_input(
+        browser,
+        '//*[@id="ef_ei_34000144_filtroperiodos_nombre"]',
+        input_text=input_text,
+        text=text_flag,
+        timeout=timeout,
+        residual_timeout=residual_timeout,
+    )
+
+
+def ejecutar_filtro_com(
+    browser: webdriver.Firefox, timeout: int = 10, residual_timeout: int = 1
+) -> None:
+    """
+    Ejecuta el filtro haciendo clic en el botón correspondiente.
+
+    Args:
+        browser: Instancia del navegador.
+        timeout: Tiempo máximo de espera en segundos.
+        residual_timeout: Tiempo de espera adicional después de interactuar.
+    """
+    click_by_xpath(
+        browser, '//*[@id="ei_34000144_filtro_filtrar"]', timeout, residual_timeout
+    )
+
+
 def acta_generator(
     browser: webdriver.Firefox,
     acta_obj: Any,
@@ -458,6 +525,131 @@ def general_info(
     return info
 
 
+def get_statuses(browser):
+    col = browser.find_elements(By.XPATH, '//*[@class=" ei-cuadro-fila col-cen-s1"]')
+    res = []
+    for cell in col:
+        status = cell.get_attribute("innerHTML")
+        if "rojo.png" in status:
+            res.append("Acta Cerrada")
+        elif "verde.png" in status:
+            res.append("Acta Abierta")
+        elif "azul.png" in status:
+            res.append("Acta Anulada")
+        else:
+            raise ValueError(f"No se pudo determinar el estado del acta: {status}")
+    return res
+
+
+def acta_generator_com(
+    browser: webdriver.Firefox,
+    acta_obj: Any,
+    acta_status: str,
+    timeout: int = 15,
+    residual_timeout: int = 1,
+) -> Union[Tuple[pd.DataFrame, str], str]:
+    """
+    Genera un acta a partir de un objeto acta, recopilando la información general y la de los alumnos a lo largo de las páginas.
+
+    Args:
+        browser: Instancia del navegador.
+        acta_obj: Elemento que representa el acta a procesar.
+        timeout: Tiempo máximo de espera en segundos.
+        residual_timeout: Tiempo de espera adicional después de interactuar.
+
+    Returns:
+        Una tupla (DataFrame con la información consolidada, actividad) o un string de error.
+    """
+
+    acta_obj.click()
+    WebDriverWait(browser, timeout).until(
+        EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_34000146_cancelar"]'))
+    )
+    try:
+        soup = BeautifulSoup(browser.page_source, "html.parser")
+        info = general_info_com(soup, timeout, residual_timeout)
+        tabs = [tab_alumnos_com(soup, timeout, residual_timeout)]
+    except Exception:
+        try:
+            time.sleep(timeout)
+            soup = BeautifulSoup(browser.page_source, "html.parser")
+            info = general_info_com(soup, timeout, residual_timeout)
+            tabs = [tab_alumnos_com(soup, timeout, residual_timeout)]
+        except Exception:
+            time.sleep(timeout)
+            info = general_info_com(soup, timeout, residual_timeout)
+
+            back = browser.find_element(By.XPATH, '//*[@id="ci_34000146_cancelar"]')
+            back.click()
+            time.sleep(residual_timeout)
+            try:
+                return "Error en acta", info["Actividad"]
+            except:
+                return "Error en acta", "Act. no encontrada"
+    info["Estado"] = acta_status
+    try:
+        n_pages = int(
+            browser.find_element(
+                By.XPATH,
+                '//*[@id="cuerpo_js_cuadro_34000148_cuadro_alumnos"]/tbody/tr[4]/td/div/strong[2]',
+            ).text
+        )
+    except exceptions.NoSuchElementException:
+        n_pages = 1
+
+    for _ in range(1, n_pages):
+        next_page(browser, residual_timeout)
+        # WebDriverWait(browser, timeout).until(
+        #     EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_34000146_cancelar"]'))
+        # )
+        soup = BeautifulSoup(browser.page_source, "html.parser")
+        tabs.append(tab_alumnos_com(soup, timeout, residual_timeout))
+
+    tab = pd.concat(tabs, ignore_index=True)
+    tab["Nº"] = tab.index + 1
+    old_cols = tab.columns.to_list()
+
+    for col, val in info.items():
+        tab[col] = val
+    old_cols.extend(info.keys())
+    tab = tab[old_cols]
+    back = browser.find_element(By.XPATH, '//*[@id="ci_34000146_cancelar"]')
+    back.click()
+    time.sleep(residual_timeout)
+    return tab, info["Actividad"]
+
+
+def general_info_com(
+    soup: BeautifulSoup, timeout: int = 15, residual_timeout: int = 1
+) -> Dict[str, Any]:
+    """
+    Extrae la información general del acta a partir del HTML.
+
+    Args:
+        soup: Objeto BeautifulSoup del HTML de la página.
+        timeout: Tiempo máximo de espera en segundos.
+        residual_timeout: Tiempo de espera adicional después de interactuar.
+
+    Returns:
+        Diccionario con la información general extraída.
+    """
+    tab = pd.read_html(StringIO(soup.prettify()))[1]
+    info: Dict[str, Any] = {}
+    tab_info = tab.iloc[0:5]
+    for row in tab_info.iterrows():
+        info[row[1][0]] = row[1][1]
+        info[row[1][2]] = row[1][3]
+        info[row[1][4]] = row[1][5]
+    for i in range(10):
+        try:
+            info.pop(str(i))
+        except Exception:
+            pass
+    info.pop("Fecha", None)
+    info.pop(np.nan, None)
+    return info
+
+
 def tab_alumnos(
     soup: BeautifulSoup, timeout: int = 15, residual_timeout: int = 1
 ) -> pd.DataFrame:
@@ -486,6 +678,37 @@ def tab_alumnos(
             tab = tab.drop(0)
         except Exception:
             raise ValueError("No se pudo leer la tabla de alumnos")
+    return
+
+
+def tab_alumnos_com(
+    soup: BeautifulSoup, timeout: int = 15, residual_timeout: int = 1
+) -> pd.DataFrame:
+    """
+    Extrae la información de los alumnos de una sola página.
+
+    Args:
+        soup: Objeto BeautifulSoup del HTML de la página.
+        timeout: Tiempo máximo de espera en segundos.
+        residual_timeout: Tiempo de espera adicional después de interactuar.
+
+    Returns:
+        DataFrame con la información de los alumnos.
+    """
+    try:
+        if "No hay datos cargados" in soup.prettify():
+            return pd.DataFrame()
+        tab = pd.read_html(StringIO(soup.prettify()))[5]
+        tab.columns = tab.iloc[0, :]
+        tab = tab.drop(0)
+    except Exception:
+        time.sleep(timeout)
+        try:
+            tab = pd.read_html(StringIO(soup.prettify()))[4]
+            tab.columns = tab.iloc[0, :]
+            tab = tab.drop(0)
+        except Exception:
+            raise ValueError("No se pudo leer la tabla de alumnos")
     return tab
 
 
@@ -501,10 +724,14 @@ def next_page(browser: webdriver.Firefox, residual_timeout: int = 1) -> None:
         By.XPATH, '//*[@src="/toba_2.6/img/nucleo/paginacion/siguiente.gif?av=3.3.26"]'
     )
     obj.click()
-    WebDriverWait(browser, 10).until(
+    WebDriverWait(browser, 5).until(
         EC.any_of(
             EC.element_to_be_clickable((By.XPATH, '//*[@class="ei-boton-fila"]')),
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_34000146_cancelar"]')),
             EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_38000483_cancelar"]')),
+            EC.visibility_of(
+                (By.XPATH, '//*[@src="/toba_2.6/img/deshacer.png?av=3.3.26"]')
+            ),
         )
     )
     time.sleep(residual_timeout)
@@ -526,6 +753,7 @@ def prev_page(browser: webdriver.Firefox, residual_timeout: int = 1) -> None:
         EC.any_of(
             EC.element_to_be_clickable((By.XPATH, '//*[@class="ei-boton-fila"]')),
             EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_38000483_cancelar"]')),
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_34000146_cancelar"]')),
         )
     )
     time.sleep(residual_timeout)

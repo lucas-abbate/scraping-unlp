@@ -10,7 +10,7 @@
 - Se puede ejecutar de distintas formas (los parametros con -- son opcionales):
 
 """
-examenes.exe <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --llamado=<llamado> --output=<carpeta_output> --filename=<nombre_output.xlsx>
+python examenes.py <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --llamado=<llamado> --output=<carpeta_output> --filename=<nombre_output.xlsx>
 """
 
 - año y llamado son opcionales. Si no se pasan, el programa da a elegir entre los años y llamados disponibles
@@ -23,3 +23,11 @@ examenes.exe <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --llamado=<ll
 - Si al querer empezar, la página que abre es 403 Forbidden, es porque el proxy no está seteado correctamente.
 - Si no abre ningún navegador, descargar el geckodriver, y agregarlo al PATH de windows.
 
+### Scraper de comisiones del SIU
+
+- En general idem al anterior
+- Es mas lento que el de examenes, porque dentro de cada comision hay varias actas
+
+"""
+python comisiones.py <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --periodo=<periodo> --output=<carpeta_output> --filename=<nombre_output.xlsx>
+"""
