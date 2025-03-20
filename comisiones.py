@@ -146,7 +146,10 @@ def main(
                         By.XPATH, '//*[@class="ei-boton-fila"]'
                     )
                     statuses = fx.get_statuses(browser)
-                    df, act = fx.acta_generator_com(browser, actas[j], statuses[j])
+                    instances, types = fx.get_instance(browser)
+                    df, act = fx.acta_generator_com(
+                        browser, actas[j], statuses[j], instances[j], types[j]
+                    )
                     pbar.set_postfix_str(f"{act}")
                     if isinstance(df, str):
                         tqdm.write(f"{df} {act}")

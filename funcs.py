@@ -525,6 +525,15 @@ def general_info(
     return info
 
 
+def get_instance(browser):
+    soup = BeautifulSoup(browser.page_source, "html.parser").prettify()
+    dfs = pd.read_html(StringIO(soup), header=0)
+    df = dfs[4]
+    instances = df["Instancia"].tolist()
+    types = df["Tipo"].tolist()
+    return instances, types
+
+
 def get_statuses(browser):
     col = browser.find_elements(By.XPATH, '//*[@class=" ei-cuadro-fila col-cen-s1"]')
     res = []
@@ -545,6 +554,8 @@ def acta_generator_com(
     browser: webdriver.Firefox,
     acta_obj: Any,
     acta_status: str,
+    acta_instance: str,
+    acta_type: str,
     timeout: int = 15,
     residual_timeout: int = 1,
 ) -> Union[Tuple[pd.DataFrame, str], str]:
@@ -587,6 +598,8 @@ def acta_generator_com(
             except:
                 return "Error en acta", "Act. no encontrada"
     info["Estado"] = acta_status
+    info["Instancia"] = acta_instance
+    info["Tipo"] = acta_type
     try:
         n_pages = int(
             browser.find_element(
