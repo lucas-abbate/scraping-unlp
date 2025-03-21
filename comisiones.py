@@ -93,11 +93,13 @@ def main(
     # Iterar sobre las páginas de actas
     for i in tqdm(range(pags), desc="Páginas", position=0, leave=True):
         if i != 0:
-            fx.next_page(browser, residual_timeout)
+            for _ in range(i):
+                fx.next_page(browser, residual_timeout)
 
         comisiones = browser.find_elements(By.XPATH, '//*[@class="ei-boton-fila"]')
         if i != 0:
-            fx.prev_page(browser, residual_timeout)
+            for _ in range(i):
+                fx.prev_page(browser, residual_timeout)
 
         # Iterar sobre las actas de la página actual
         pbar = tqdm(range(len(comisiones)), desc="Comisiones", leave=False, position=1)
@@ -176,12 +178,20 @@ def main(
                         continue
 
                 dfs.append(df)
-
-            back = browser.find_element(
-                By.XPATH, '//*[@id="ci_34000146_cancelar_preseleccion"]'
-            )
-            back.click()
-            time.sleep(5 * residual_timeout)
+            try:
+                back = browser.find_element(
+                    By.XPATH, '//*[@id="ci_34000146_cancelar_preseleccion"]'
+                )
+                back.click()
+            except exceptions.NoSuchElementException:
+                time.sleep(10 * residual_timeout)
+                try:
+                    back = browser.find_element(
+                        By.XPATH, '//*[@id="ci_34000146_cancelar_preseleccion"]'
+                    )
+                    back.click()
+                except exceptions.NoSuchElementException:
+                    raise Exception("No se pudo volver a la lista de actas")
     browser.quit()
     return pd.concat(dfs, ignore_index=True)
 
