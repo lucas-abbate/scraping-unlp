@@ -29,5 +29,5 @@ python examenes.py <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --llama
 - Es mas lento que el de examenes, porque dentro de cada comision hay varias actas
 
 """
-python comisiones.py <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --periodo=<periodo> --output=<carpeta_output> --filename=<nombre_output.xlsx>
+python comisiones.py <ruta_al_txt_con_usuario_y_contraseña> --año=<año> --periodo=<periodo> --output=<carpeta_output> --filename=<nombre_output.xlsx> --start_page=<pagina_inicial> --end_page=<pagina_final>
 """

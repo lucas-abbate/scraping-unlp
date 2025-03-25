@@ -25,6 +25,10 @@ def main(
     año: Optional[int] = None,
     periodo: Optional[str] = None,
     residual_timeout: int = 1,
+    page_start: int = 0,
+    page_end: int = 0,
+    output_folder: str = "",
+    output_filename: str = "output.xlsx",
 ) -> pd.DataFrame:
     """
     Función principal para la extracción de comisiones de examen desde el sitio de SIU.
@@ -90,15 +94,22 @@ def main(
     except exceptions.NoSuchElementException:
         pags = 1
 
+    if page_start == 0:
+        page_start = 1
+    if page_end == 0:
+        page_end = pags
+
     # Iterar sobre las páginas de actas
-    for i in tqdm(range(pags), desc="Páginas", position=0, leave=True):
-        if i != 0:
-            for _ in range(i):
+    for i in tqdm(
+        range(page_start, page_end + 1), desc="Páginas", position=0, leave=True
+    ):
+        if i != 1:
+            for _ in range(1, i):
                 fx.next_page(browser, residual_timeout)
 
         comisiones = browser.find_elements(By.XPATH, '//*[@class="ei-boton-fila"]')
-        if i != 0:
-            for _ in range(i):
+        if i != 1:
+            for _ in range(1, i):
                 fx.prev_page(browser, residual_timeout)
 
         # Iterar sobre las actas de la página actual
@@ -120,7 +131,7 @@ def main(
                 except exceptions.NoSuchElementException:
                     curr_pag = "1"
             # Asegurarse que estamos en la página correcta
-            while curr_pag != str(i + 1):
+            while curr_pag != str(i):
                 fx.next_page(browser, 2)
                 curr_pag = browser.find_element(
                     By.XPATH,
@@ -192,8 +203,12 @@ def main(
                     back.click()
                 except exceptions.NoSuchElementException:
                     raise Exception("No se pudo volver a la lista de actas")
+        result = pd.concat(dfs, ignore_index=True)
+        result.to_excel(os.path.join(output_folder, output_filename), index=False)
     browser.quit()
-    return pd.concat(dfs, ignore_index=True)
+    result = pd.concat(dfs, ignore_index=True)
+    result.to_excel(os.path.join(output_folder, output_filename), index=False)
+    return result
 
 
 if __name__ == "__main__":
@@ -217,17 +232,36 @@ if __name__ == "__main__":
         help="Nombre del archivo de salida.",
         default="output.xlsx",
     )
+    parser.add_argument(
+        "--start_page",
+        type=int,
+        help="Número de página inicial.",
+        default=0,
+    )
+    parser.add_argument(
+        "--end_page",
+        type=int,
+        help="Número de página final.",
+        default=0,
+    )
 
     args = parser.parse_args()
-    result = main(args.siu_credentials, args.año, args.periodo, args.residual_timeout)
-
+    output_filename = (
+        args.filename if args.filename.endswith(".xlsx") else f"{args.filename}.xlsx"
+    )
     if args.output == "":
         args.output = os.getcwd()
 
     if not os.path.exists(args.output):
         os.makedirs(args.output, exist_ok=True)
 
-    output_filename = (
-        args.filename if args.filename.endswith(".xlsx") else f"{args.filename}.xlsx"
+    result = main(
+        args.siu_credentials,
+        args.año,
+        args.periodo,
+        args.residual_timeout,
+        args.start_page,
+        args.end_page,
+        args.output,
+        output_filename,
     )
-    result.to_excel(os.path.join(args.output, output_filename), index=False)
