@@ -691,7 +691,7 @@ def tab_alumnos(
             tab = tab.drop(0)
         except Exception:
             raise ValueError("No se pudo leer la tabla de alumnos")
-    return
+    return tab
 
 
 def tab_alumnos_com(
