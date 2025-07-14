@@ -737,16 +737,29 @@ def next_page(browser: webdriver.Firefox, residual_timeout: int = 1) -> None:
         By.XPATH, '//*[@src="/toba_2.6/img/nucleo/paginacion/siguiente.gif?av=3.3.26"]'
     )
     obj.click()
-    WebDriverWait(browser, 5).until(
-        EC.any_of(
-            EC.element_to_be_clickable((By.XPATH, '//*[@class="ei-boton-fila"]')),
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_34000146_cancelar"]')),
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_38000483_cancelar"]')),
-            EC.visibility_of(
-                (By.XPATH, '//*[@src="/toba_2.6/img/deshacer.png?av=3.3.26"]')
-            ),
+    try:
+        WebDriverWait(browser, 5).until(
+            EC.any_of(
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="ci_34000146_cancelar"]')
+                ),
+                EC.element_to_be_clickable((By.XPATH, '//*[@class="ei-boton-fila"]')),
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="ci_38000483_cancelar"]')
+                ),
+                EC.visibility_of_element_located(
+                    (By.XPATH, '//*[@src="/toba_2.6/img/deshacer.png?av=3.3.26"]')
+                ),
+                EC.visibility_of_element_located(
+                    (
+                        By.XPATH,
+                        '//*[@src="/toba_2.6/img/nucleo/paginacion/siguiente.gif?av=3.3.26"]',
+                    )
+                ),
+            )
         )
-    )
+    except exceptions.TimeoutException:
+        ...
     time.sleep(residual_timeout)
 
 
@@ -762,11 +775,24 @@ def prev_page(browser: webdriver.Firefox, residual_timeout: int = 1) -> None:
         By.XPATH, '//*[@src="/toba_2.6/img/nucleo/paginacion/anterior.gif?av=3.3.26"]'
     )
     obj.click()
-    WebDriverWait(browser, 10).until(
-        EC.any_of(
-            EC.element_to_be_clickable((By.XPATH, '//*[@class="ei-boton-fila"]')),
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_38000483_cancelar"]')),
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="ci_34000146_cancelar"]')),
+    try:
+        WebDriverWait(browser, 10).until(
+            EC.any_of(
+                EC.element_to_be_clickable((By.XPATH, '//*[@class="ei-boton-fila"]')),
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="ci_38000483_cancelar"]')
+                ),
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="ci_34000146_cancelar"]')
+                ),
+                EC.visibility_of_element_located(
+                    (
+                        By.XPATH,
+                        '//*[@src="/toba_2.6/img/nucleo/paginacion/siguiente.gif?av=3.3.26"]',
+                    )
+                ),
+            )
         )
-    )
+    except exceptions.TimeoutException:
+        ...
     time.sleep(residual_timeout)
